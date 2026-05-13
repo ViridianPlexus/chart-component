@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Transition Graph</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+      font-family: Arial, sans-serif;
+    }
+
+    #graph {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+
+      padding: 10px;
+
+      color: white;
+
+      background: rgba(0,0,0,0.7);
+
+      border-radius: 8px;
+
+      z-index: 1000;
+
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="graph"></div>
+
+<div id="info">
+  Word Transition Graph
+</div>
+
+<script type="module">
+
+import ForceGraph3D from "https://esm.sh/3d-force-graph";
+import SpriteText from "https://esm.sh/three-spritetext";
+
+
+const text = `
+The black cat jumped as if through the ice.
+The black cat ran through the snow.
+The black cat jumped again!
+Did the ice crack?
+The ice cracked.
+The black cat jumped through the ice.
+`;
+
+
+
+function parseText(text) {
+
+  const nodeMap = new Map();
+
+  const edgeMap = new Map();
+
+
+  const sentences = text
+    .split(/[.!?]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+
+
+  function addNode(word) {
+
+    if (!nodeMap.has(word)) {
+
+      nodeMap.set(word, {
+        id: word,
+        count: 0
+      });
+    }
+
+    const node = nodeMap.get(word);
+
+    node.count++;
+
+    return node;
+  }
+
+
+
+  function addEdge(source, target) {
+
+    const key = source + "->" + target;
+
+    if (!edgeMap.has(key)) {
+
+      edgeMap.set(key, {
+        source,
+        target,
+        count: 0
+      });
+    }
+
+    edgeMap.get(key).count++;
+  }
+
+
+
+  for (const sentence of sentences) {
+
+    const words = sentence
+      .toLowerCase()
+      .match(/\b[\w']+\b/g);
+
+    if (!words) continue;
+
+
+    for (let i = 0; i < words.length; i++) {
+
+      addNode(words[i]);
+
+
+      if (i < words.length - 1) {
+
+        addEdge(
+          words[i],
+          words[i + 1]
+        );
+      }
+    }
+  }
+
+
+  return {
+    nodes: [...nodeMap.values()],
+    links: [...edgeMap.values()]
+  };
+}
+
+
+
+const graphData = parseText(text);
+
+
+
+const maxNodeCount = Math.max(
+  ...graphData.nodes.map(
+    n => n.count
+  )
+);
+
+
+const maxEdgeCount = Math.max(
+  ...graphData.links.map(
+    l => l.count
+  )
+);
+
+
+
+function nodeBrightness(node) {
+
+  return node.count / maxNodeCount;
+}
+
+
+
+function edgeBrightness(link) {
+
+  return link.count / maxEdgeCount;
+}
+
+
+
+const graphElement =
+  document.getElementById("graph");
+
+
+
+const Graph =
+  ForceGraph3D({
+    controlType: "fly"
+  })(graphElement)
+
+  .graphData(graphData)
+
+  .backgroundColor("#000000")
+
+
+  .nodeVal(node =>
+    4 + Math.sqrt(node.count) * 6
+  )
+
+
+  .nodeColor(node => {
+
+    const brightness =
+      nodeBrightness(node);
+
+    const intensity =
+      Math.floor(
+        80 + brightness * 175
+      );
+
+    return `rgb(
+      ${intensity},
+      ${intensity},
+      255
+    )`;
+  })
+
+
+  .nodeThreeObject(node => {
+
+    const sprite =
+      new SpriteText(
+        node.id
+      );
+
+    sprite.textHeight =
+      8;
+
+    const brightness =
+      nodeBrightness(node);
+
+    const intensity =
+      Math.floor(
+        80 + brightness * 175
+      );
+
+    sprite.color =
+      `rgb(
+        ${intensity},
+        ${intensity},
+        255
+      )`;
+
+    return sprite;
+  })
+
+
+  .nodeThreeObjectExtend(true)
+
+
+  .nodeLabel(node =>
+    `
+    <b>${node.id}</b>
+    <br>
+    Count: ${node.count}
+    `
+  )
+
+
+  .linkDirectionalArrowLength(6)
+
+  .linkDirectionalArrowRelPos(1)
+
+
+  .linkWidth(link =>
+    1 + link.count * 1.5
+  )
+
+
+  .linkColor(link => {
+
+    const brightness =
+      edgeBrightness(link);
+
+    const intensity =
+      Math.floor(
+        50 + brightness * 205
+      );
+
+    return `rgb(
+      255,
+      ${intensity},
+      ${intensity}
+    )`;
+  })
+
+
+  .linkOpacity(0.9)
+
+  .d3VelocityDecay(0.3);
+
+
+
+Graph.d3Force("charge")
+  .strength(-250);
+
+
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    Graph.width(
+      window.innerWidth
+    );
+
+    Graph.height(
+      window.innerHeight
+    );
+  }
+);
+
+
+</script>
+
+</body>
+</html>
