@@ -1,0 +1,15 @@
+in one file titled reader.html, you will notice a file that allows you to upload any text file and page through it like a book. open this file and upload the book attatched, a peoples history of the united states by howard zinn. you can move through this book, page by page, via the arrow keys on the screen or on your keyboard. 
+
+in another file titled "chart.html" when you open it you will notice a graph of edges and nodes. Using 3dforcegraph we are creating a weighted directed graph. Given a section of text, every word becomes a node in order of appearance from within the text. Nodes and edges increase in brightness/vibrancy in accordance with the number of times a word/phrase is repeated. We allow punctuation marks like .?! to terminate strings inputted into the graph. in other words:
+
+words → nodes
+word transitions → directed edges
+. ? ! terminate strings
+repeated words increase node size + brightness
+repeated phrases increase edge thickness + brightness
+arrows for direction
+lowercase normalization 
+
+in the chart.html graph it is possible to move the camera around via the arrow wasd keys and arrow keys on your keyboard.
+
+what we seek to do is combine these functionalities in a way. let it be the case that every time the user flips a page in the reader, all the words that were on the page they just left, gets added to their personal graph of known words. 

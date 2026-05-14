@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Paginated Reader</title>
+
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400&display=swap" rel="stylesheet">
+
+<style>
+
+html{
+  background:black;
+  height:100%;
+  overflow:hidden;
+}
+
+body{
+  margin:0;
+  height:100%;
+  overflow:hidden;
+  font-family:monospace;
+}
+
+#Matrix{
+  position:fixed;
+  inset:0;
+  z-index:0;
+}
+
+
+.page{
+  transform: scale(1.02);
+  transform-origin: center top;
+
+  width: min(700px, 92vw);
+  height: calc(100vh - 80px);
+
+  position: relative;
+  z-index: 2;
+
+  margin: 20px auto;
+
+  padding: 90px 60px 70px;
+
+  box-sizing: border-box;
+
+  overflow: hidden;
+
+  background: rgba(0,0,0,.75);
+
+  border: 1px solid rgba(252,18,18,.25);
+
+  box-shadow:
+    0 0 25px rgba(252,18,18,.15),
+    0 2px 15px rgba(0,0,0,.8);
+
+  backdrop-filter: blur(6px);
+}
+
+.chapter-title{
+
+  text-align:center;
+
+  font-size:28px;
+
+  color:white;
+
+  margin-bottom:12px;
+
+  text-shadow:0 0 6px rgba(252,18,18,.5);
+}
+
+
+.divider{
+
+  width:240px;
+  height:1px;
+
+  background:#FC1212;
+
+  margin:0 auto 70px;
+
+  box-shadow:0 0 10px rgba(252,18,18,.6);
+}
+
+
+.content{
+
+  font-family:"EB Garamond", serif;
+
+  font-size:16px;
+
+  line-height:1.35;
+
+  color:white;
+
+  text-align:justify;
+}
+
+.content p{
+  margin:0 0 .5em;
+  text-indent:2em;
+}
+
+.content p:first-child{
+  text-indent:0;
+}
+
+
+
+#controls{
+
+  position:fixed;
+
+  bottom:40px;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+  z-index:1000;
+
+  display:flex;
+
+  gap:20px;
+
+  align-items:center;
+}
+
+
+.key{
+
+  width:50px;
+  height:50px;
+
+  border:1px solid #FC1212;
+
+  border-radius:8px;
+
+  color:#FC1212;
+
+  display:flex;
+
+  justify-content:center;
+
+  align-items:center;
+
+  cursor:pointer;
+
+  user-select:none;
+
+  background:rgba(252,18,18,.1);
+}
+
+
+#page-number{
+  color:white;
+  min-width:100px;
+  text-align:center;
+}
+
+
+#file-picker{
+
+  position:fixed;
+
+  top:20px;
+
+  left:20px;
+
+  z-index:1000;
+
+  color:white;
+}
+
+</style>
+</head>
+
+<body>
+
+
+<canvas id="Matrix"></canvas>
+
+
+<input
+  type="file"
+  id="file-picker"
+  accept=".txt"
+/>
+
+
+<div class="page">
+
+  <div
+    class="chapter-title"
+    id="title"
+  >
+    Upload Text File
+  </div>
+
+
+  <div class="divider"></div>
+
+
+  <div
+    class="content"
+    id="content"
+  >
+  </div>
+
+</div>
+
+
+
+<div id="controls">
+
+  <div
+    class="key"
+    id="prev"
+  >
+    ←
+  </div>
+
+  <div
+    id="page-number"
+  >
+    0 / 0
+  </div>
+
+  <div
+    class="key"
+    id="next"
+  >
+    →
+  </div>
+
+</div>
+
+
+
+<script>
+
+
+const PAGE_SIZE = 1500;
+
+
+let pages = [];
+
+
+let currentPage = 0;
+
+
+const titleElement =
+  document.getElementById("title");
+
+
+const contentElement =
+  document.getElementById("content");
+
+
+const pageNumber =
+  document.getElementById("page-number");
+
+
+
+function paginate(text){
+
+  pages = [];
+
+
+  let index = 0;
+
+
+  while(index < text.length){
+
+    let end =
+      index + PAGE_SIZE;
+
+
+    if(end < text.length){
+
+      while(
+        end > index &&
+        text[end] !== " "
+      ){
+        end--;
+      }
+    }
+
+
+    pages.push(
+
+      text
+        .slice(index,end)
+        .trim()
+    );
+
+
+    index = end;
+  }
+
+
+  currentPage = 0;
+
+
+  renderPage();
+}
+
+
+
+function renderPage(){
+
+  if(!pages.length){
+    return;
+  }
+
+
+  const text =
+    pages[currentPage];
+
+
+  const paragraphs =
+    text
+      .split(/\n+/)
+      .filter(Boolean);
+
+
+  contentElement.innerHTML =
+    paragraphs
+      .map(
+
+        p =>
+        `<p>${p}</p>`
+
+      )
+      .join("");
+
+
+
+  pageNumber.textContent =
+    `${currentPage+1} / ${pages.length}`;
+}
+
+
+
+function nextPage(){
+
+  if(
+    currentPage <
+    pages.length-1
+  ){
+
+    currentPage++;
+
+    renderPage();
+  }
+}
+
+
+
+function prevPage(){
+
+  if(
+    currentPage > 0
+  ){
+
+    currentPage--;
+
+    renderPage();
+  }
+}
+
+
+
+document
+  .getElementById("next")
+  .onclick = nextPage;
+
+
+document
+  .getElementById("prev")
+  .onclick = prevPage;
+
+
+
+document
+  .getElementById("file-picker")
+  .addEventListener(
+
+    "change",
+
+    e=>{
+
+      const file =
+        e.target.files[0];
+
+      if(!file){
+        return;
+      }
+
+
+      titleElement.textContent =
+        file.name;
+
+
+      const reader =
+        new FileReader();
+
+
+      reader.onload =
+        ()=>{
+
+          paginate(
+            reader.result
+          );
+        };
+
+
+      reader.readAsText(
+        file
+      );
+    }
+  );
+
+
+
+window
+  .addEventListener(
+
+    "keydown",
+
+    e=>{
+
+      if(
+        e.key==="ArrowRight"
+      ){
+        nextPage();
+      }
+
+
+      if(
+        e.key==="ArrowLeft"
+      ){
+        prevPage();
+      }
+
+    }
+  );
+
+
+
+
+// matrix effect
+
+
+const canvas =
+  document.getElementById(
+    "Matrix"
+  );
+
+
+const context =
+  canvas.getContext(
+    "2d"
+  );
+
+
+const alphabet =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+
+const fontSize = 16;
+
+
+let rainDrops;
+
+
+
+function resize(){
+
+  canvas.width =
+    innerWidth;
+
+
+  canvas.height =
+    innerHeight;
+
+
+  const columns =
+    canvas.width /
+    fontSize;
+
+
+  rainDrops =
+    Array.from(
+
+      {
+        length:columns
+      },
+
+      ()=>1
+    );
+}
+
+
+
+function draw(){
+
+  context.fillStyle =
+    "rgba(0,0,0,.05)";
+
+
+  context.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+
+  context.fillStyle =
+    "#FC1212";
+
+
+  context.font =
+    fontSize +
+    "px monospace";
+
+
+  for(
+    let i=0;
+    i<rainDrops.length;
+    i++
+  ){
+
+    const char =
+      alphabet.charAt(
+
+        Math.floor(
+
+          Math.random() *
+          alphabet.length
+        )
+      );
+
+
+    context.fillText(
+
+      char,
+
+      i*fontSize,
+
+      rainDrops[i]*
+      fontSize
+    );
+
+
+    if(
+
+      rainDrops[i]*
+      fontSize >
+      canvas.height
+
+      &&
+
+      Math.random() >
+      .975
+
+    ){
+
+      rainDrops[i] = 0;
+    }
+
+
+    rainDrops[i]++;
+  }
+}
+
+
+
+resize();
+
+
+setInterval(
+  draw,
+  30
+);
+
+
+window.addEventListener(
+  "resize",
+  resize
+);
+
+
+</script>
+
+</body>
+</html>
